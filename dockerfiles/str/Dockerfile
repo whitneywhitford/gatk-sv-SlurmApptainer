@@ -13,7 +13,8 @@ ARG SAMTOOLS_VER=1.15.1
 ARG EH_VER=5.0.0
 ARG REVIEWER_VER=0.2.7
 
-RUN apt-get update && apt-get install --no-install-recommends -qqy \
+RUN sed -i 's|http://.*.ubuntu.com/ubuntu/|http://old-releases.ubuntu.com/ubuntu/|g' /etc/apt/sources.list && \
+    apt-get update && apt-get install --no-install-recommends -qqy \
     curl \
     tabix \
     git \

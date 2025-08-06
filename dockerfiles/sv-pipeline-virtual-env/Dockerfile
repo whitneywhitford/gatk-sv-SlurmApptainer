@@ -1,4 +1,4 @@
-ARG SV_BASE_MINI_IMAGE=:sv-base-mini:latest
+ARG SV_BASE_MINI_IMAGE=sv-base-mini:latest
 ARG R_VIRTUAL_ENV_IMAGE=sv-base-virtual-env:latest
 ARG PYTHON_VIRTUAL_ENV_IMAGE=samtools-cloud-virtual-env:latest
 
@@ -40,6 +40,21 @@ RUN mamba install -qy --freeze-installed -n $CONDA_ENV_NAME -c conda-forge -c bi
 ARG PYSAM_VERSION=0.15.4
 RUN export SETUPTOOLS_VERSION=$(python -c 'import setuptools; print(setuptools.__version__)') && \
     pip install setuptools==57.5.0 && \
+    apt-get -qqy update --fix-missing && \
+    apt-get -qqy dist-upgrade && \
+	apt-get -qqy install --no-install-recommends \
+				 ca-certificates \
+                 libbz2-dev \
+                 libcurl4-openssl-dev \
+                 liblzma-dev \
+                 libncurses5-dev \
+                 autoconf \
+                 automake \
+                 bzip2 \
+                 gcc \
+                 make \
+                 wget \
+                 zlib1g-dev && \
     wget -q https://github.com/pysam-developers/pysam/archive/refs/tags/v$PYSAM_VERSION.tar.gz && \
     tar -xzf v$PYSAM_VERSION.tar.gz && \
     cd pysam-$PYSAM_VERSION && \
