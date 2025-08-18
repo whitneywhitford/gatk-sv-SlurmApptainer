@@ -83,7 +83,8 @@ task SetBins {
     disk_gb: disk_gb,
     boot_disk_gb: 10,
     preemptible_tries: 0,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 10
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -149,6 +150,7 @@ task SetBins {
     docker: sv_base_mini_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 
@@ -170,7 +172,8 @@ task MakeBincovMatrixColumns {
     disk_gb: disk_gb,
     boot_disk_gb: 10,
     preemptible_tries: 0,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 60
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -215,6 +218,7 @@ task MakeBincovMatrixColumns {
     docker: sv_base_mini_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 
@@ -240,7 +244,8 @@ task ZPaste {
     disk_gb: disk_gb,
     boot_disk_gb: 10,
     preemptible_tries: 0,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 10
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -276,5 +281,6 @@ task ZPaste {
     docker: sv_base_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }

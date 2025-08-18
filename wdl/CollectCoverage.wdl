@@ -69,6 +69,7 @@ task CollectCounts {
     cpu: select_first([cpu, 1])
     preemptible: select_first([preemptible_attempts, 3])
     maxRetries: 1
+	runtime_minutes: 120
   }
 
   output {

@@ -98,6 +98,7 @@ workflow ClusterDepth {
     call tasks_cluster.SVCluster {
       input:
         vcfs=flatten([DelBedToVcf.out, DupBedToVcf.out]),
+		vcf_indexes = flatten([DelBedToVcf.out_index, DupBedToVcf.out_index]),
         ploidy_table=ploidy_table,
         output_prefix="~{batch}.cluster_batch.depth.~{contig}.clustered",
         contig=contig,

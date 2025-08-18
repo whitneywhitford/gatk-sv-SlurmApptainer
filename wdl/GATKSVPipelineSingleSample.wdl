@@ -89,6 +89,8 @@ workflow GATKSVPipelineSingleSample {
     String? melt_docker
     String? scramble_docker
     String? wham_docker
+	
+	Boolean? run_localize_reads
 
     ############################################################
     ## GatherSampleEvidence
@@ -683,6 +685,7 @@ workflow GATKSVPipelineSingleSample {
         genomes_in_the_cloud_docker=genomes_in_the_cloud_docker,
         samtools_cloud_docker=samtools_cloud_docker,
         cloud_sdk_docker = cloud_sdk_docker,
+		linux_docker=linux_docker,
         runtime_attr_localize_reads=runtime_attr_localize_reads,
         runtime_attr_manta=runtime_attr_manta,
         runtime_attr_melt_coverage=runtime_attr_melt_coverage,
@@ -691,7 +694,8 @@ workflow GATKSVPipelineSingleSample {
         runtime_attr_scramble_part1=runtime_attr_scramble_part1,
         runtime_attr_scramble_part2=runtime_attr_scramble_part2,
         runtime_attr_pesr=runtime_attr_pesr,
-        runtime_attr_wham=runtime_attr_wham
+        runtime_attr_wham=runtime_attr_wham,
+		run_localize_reads=run_localize_reads
     }
   }
 

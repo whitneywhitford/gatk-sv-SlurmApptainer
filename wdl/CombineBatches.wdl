@@ -129,6 +129,7 @@ workflow CombineBatches {
     call ClusterTasks.SVCluster as JoinVcfs {
       input:
         vcfs=FormatVcf.out,
+		vcf_indexes=FormatVcf.out_index,
         ploidy_table=CreatePloidyTableFromPed.out,
         output_prefix="~{cohort_name}.combine_batches.~{contig}.join_vcfs",
         contig=contig,
@@ -154,6 +155,7 @@ workflow CombineBatches {
     call ClusterTasks.SVCluster as ClusterSites {
       input:
         vcfs=[JoinVcfs.out],
+		vcf_indexes=[JoinVcfs.out_index],
         ploidy_table=CreatePloidyTableFromPed.out,
         output_prefix="~{cohort_name}.combine_batches.~{contig}.cluster_sites",
         fast_mode=false,
@@ -180,6 +182,7 @@ workflow CombineBatches {
     call GroupedSVClusterTask as GroupedSVClusterPart1 {
       input:
         vcf=ClusterSites.out,
+		vcf_index=ClusterSites.out_index,
         ploidy_table=CreatePloidyTableFromPed.out,
         output_prefix="~{cohort_name}.combine_batches.~{contig}.recluster_part_1",
         reference_fasta=reference_fasta,
@@ -199,6 +202,7 @@ workflow CombineBatches {
     call GroupedSVClusterTask as GroupedSVClusterPart2 {
       input:
         vcf=GroupedSVClusterPart1.out,
+		vcf_index=GroupedSVClusterPart1.out_index,
         ploidy_table=CreatePloidyTableFromPed.out,
         output_prefix="~{cohort_name}.combine_batches.~{contig}.recluster_part_2",
         reference_fasta=reference_fasta,
@@ -219,6 +223,7 @@ workflow CombineBatches {
     call ClusterTasks.GatkToSvtkVcf {
       input:
         vcf=GroupedSVClusterPart2.out,
+		vcf_index=GroupedSVClusterPart2.out_index,
         output_prefix="~{cohort_name}.combine_batches.~{contig}.svtk_formatted",
         source="depth",
         contig_list=contig_list,
@@ -311,6 +316,7 @@ task ExtractSRVariantLists {
 task GroupedSVClusterTask {
   input {
     File vcf
+	File vcf_index
     File ploidy_table
     String output_prefix
 

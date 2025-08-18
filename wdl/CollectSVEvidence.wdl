@@ -77,12 +77,13 @@ task RunCollectSVEvidence {
   Int vm_disk_size = ceil(bam_or_cram_size + 50)
 
   RuntimeAttr default_attr = object {
-    cpu_cores: 1,
-    mem_gb: 3.75,
+    cpu_cores: 4,
+    mem_gb: 8,
     disk_gb: vm_disk_size,
     boot_disk_gb: 10,
     preemptible_tries: 3,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 120
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -125,6 +126,7 @@ task RunCollectSVEvidence {
     docker: gatk_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 

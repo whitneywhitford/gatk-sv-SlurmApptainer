@@ -222,7 +222,8 @@ task DetermineGermlineContigPloidyCaseMode {
       disk_gb: disk_gb,
       boot_disk_gb: 10,
       preemptible_tries: 3,
-      max_retries: 1
+      max_retries: 1,
+      clocktime_min: 20
     }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -267,6 +268,7 @@ task DetermineGermlineContigPloidyCaseMode {
       docker: gatk_docker
       preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
       maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+      runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
     }
 
     output {
@@ -331,11 +333,12 @@ task GermlineCNVCallerCaseMode {
 
     RuntimeAttr default_attr = object {
       cpu_cores: 4,
-      mem_gb: 10,
+      mem_gb: 8,
       disk_gb: disk_gb,
       boot_disk_gb: 10,
       preemptible_tries: 3,
-      max_retries: 1
+      max_retries: 1,
+      clocktime_min: 30
     }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -349,6 +352,7 @@ task GermlineCNVCallerCaseMode {
 
     command <<<
         set -euo pipefail
+        export PYTENSOR_FLAGS="compiledir=/tmp/compiledir_~{scatter_index}"
         mkdir ~{output_dir_}
         export GATK_LOCAL_JAR=~{default="/root/gatk.jar" gatk4_jar_override}
         export MKL_NUM_THREADS=~{cpu}
@@ -444,6 +448,7 @@ task GermlineCNVCallerCaseMode {
       docker: gatk_docker
       preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
       maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+      runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
     }
 
     output {

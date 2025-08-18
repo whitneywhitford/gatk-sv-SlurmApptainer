@@ -115,7 +115,8 @@ task RunWhamgOnBam {
     disk_gb: vm_disk_size,
     boot_disk_gb: 10,
     preemptible_tries: 3,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 90
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
   Int cpu_cores = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -181,6 +182,7 @@ task RunWhamgOnBam {
     docker: wham_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 
@@ -234,7 +236,8 @@ task RunWhamgOnCram {
     disk_gb: vm_disk_size,
     boot_disk_gb: 10,
     preemptible_tries: 3,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 90
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
   Int cpu_cores = select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
@@ -303,6 +306,7 @@ task RunWhamgOnCram {
     docker: wham_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 

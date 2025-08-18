@@ -6,6 +6,7 @@ task SVCluster {
     input {
         # Either vcfs of vcfs_tar should be provided
         Array[File] vcfs = []  # Can't use optional because of write_lines() call
+		Array[File]? vcf_indexes = []
         File? vcfs_tar
 
         File ploidy_table
@@ -59,11 +60,12 @@ task SVCluster {
 
     RuntimeAttr default_attr = object {
                                    cpu_cores: 1,
-                                   mem_gb: 3.75,
+                                   mem_gb: 8,
                                    disk_gb: ceil(10 + size(vcfs, "GB") * 3 + size(reference_fasta, "GB")),
                                    boot_disk_gb: 10,
                                    preemptible_tries: 3,
-                                   max_retries: 1
+                                   max_retries: 1,
+								   clocktime_min: 90
                                }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -137,6 +139,7 @@ task SVCluster {
         docker: gatk_docker
         preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
     }
 }
 
@@ -157,7 +160,8 @@ task ExcludeIntervalsByEndpoints {
                                    disk_gb: ceil(10 + size(vcf, "GB") * 2),
                                    boot_disk_gb: 10,
                                    preemptible_tries: 3,
-                                   max_retries: 1
+                                   max_retries: 1,
+								   clocktime_min: 10
                                }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -185,6 +189,7 @@ task ExcludeIntervalsByEndpoints {
         docker: sv_base_mini_docker
         preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
     }
 }
 
@@ -239,6 +244,7 @@ task ExcludeIntervalsByIntervalOverlap {
 task GatkToSvtkVcf {
     input {
         File vcf
+		File? vcf_index
         File? script
         String source
         File contig_list
@@ -256,7 +262,8 @@ task GatkToSvtkVcf {
                                    disk_gb: ceil(10 + size(vcf, "GB") * 2),
                                    boot_disk_gb: 10,
                                    preemptible_tries: 3,
-                                   max_retries: 1
+                                   max_retries: 1,
+								   clocktime_min: 10
                                }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -284,6 +291,7 @@ task GatkToSvtkVcf {
         docker: sv_pipeline_docker
         preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
     }
 }
 
@@ -307,7 +315,8 @@ task CNVBedToGatkVcf {
                                    disk_gb: ceil(10 + size(bed, "GB") * 2),
                                    boot_disk_gb: 10,
                                    preemptible_tries: 3,
-                                   max_retries: 1
+                                   max_retries: 1,
+								   clocktime_min: 10
                                }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -335,6 +344,7 @@ task CNVBedToGatkVcf {
         docker: sv_pipeline_docker
         preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
     }
 }
 
@@ -357,7 +367,8 @@ task CreatePloidyTableFromPed {
                                    disk_gb: 10,
                                    boot_disk_gb: 10,
                                    preemptible_tries: 3,
-                                   max_retries: 1
+                                   max_retries: 1,
+								   clocktime_min: 10
                                }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -390,6 +401,7 @@ task CreatePloidyTableFromPed {
         docker: sv_pipeline_docker
         preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
         maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+		runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
     }
 }
 
@@ -412,7 +424,8 @@ task ScatterCompressedBedOmitHeaders {
                                       cpu_cores: 1,
                                       preemptible_tries: 3,
                                       max_retries: 1,
-                                      boot_disk_gb: 10
+                                      boot_disk_gb: 10,
+									  clocktime_min: 10
                                   }
     RuntimeAttr runtime_override = select_first([runtime_attr_override, runtime_default])
     runtime {
@@ -423,6 +436,7 @@ task ScatterCompressedBedOmitHeaders {
         maxRetries: select_first([runtime_override.max_retries, runtime_default.max_retries])
         docker: sv_base_mini_docker
         bootDiskSizeGb: select_first([runtime_override.boot_disk_gb, runtime_default.boot_disk_gb])
+		runtime_minutes: select_first([runtime_override.clocktime_min, runtime_default.clocktime_min])
     }
 
     command <<<

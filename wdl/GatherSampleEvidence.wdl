@@ -116,6 +116,7 @@ workflow GatherSampleEvidence {
     String? gatk_docker_pesr_override
     String genomes_in_the_cloud_docker
     String cloud_sdk_docker
+	String linux_docker
 
     # Runtime configuration overrides
     RuntimeAttr? runtime_attr_localize_reads
@@ -157,7 +158,8 @@ workflow GatherSampleEvidence {
       reads_path = bam_or_cram_file,
       reads_index = bam_or_cram_index_,
       move_files = move_bam_or_cram_files,
-      runtime_attr_override = runtime_attr_localize_reads
+      runtime_attr_override = runtime_attr_localize_reads,
+	  linux_docker=linux_docker
     }
   }
 
@@ -411,6 +413,7 @@ task LocalizeReads {
     File reads_index
     Boolean move_files = false
     RuntimeAttr? runtime_attr_override
+	String linux_docker
   }
 
   Float input_size = if move_files then size(reads_path, "GB") * 2 else size(reads_path, "GB")
@@ -420,7 +423,8 @@ task LocalizeReads {
                                   cpu_cores: 2,
                                   preemptible_tries: 3,
                                   max_retries: 1,
-                                  boot_disk_gb: 10
+                                  boot_disk_gb: 10,
+								  clocktime_min: 20
                                 }
   RuntimeAttr runtime_override = select_first([runtime_attr_override, runtime_default])
   runtime {
@@ -429,8 +433,9 @@ task LocalizeReads {
     cpu: select_first([runtime_override.cpu_cores, runtime_default.cpu_cores])
     preemptible: select_first([runtime_override.preemptible_tries, runtime_default.preemptible_tries])
     maxRetries: select_first([runtime_override.max_retries, runtime_default.max_retries])
-    docker: "ubuntu:18.04"
+    docker: linux_docker
     bootDiskSizeGb: select_first([runtime_override.boot_disk_gb, runtime_default.boot_disk_gb])
+	runtime_minutes: select_first([runtime_override.clocktime_min, runtime_default.clocktime_min])
   }
 
   Int disk_size = ceil(50 + size(reads_path, "GB"))
@@ -487,7 +492,8 @@ task CheckAligner {
                                disk_gb: 10,
                                boot_disk_gb: 10,
                                preemptible_tries: 3,
-                               max_retries: 1
+                               max_retries: 1,
+							   clocktime_min: 10
                              }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -516,6 +522,7 @@ task CheckAligner {
     docker: gatk_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 

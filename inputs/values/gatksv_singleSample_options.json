@@ -1,0 +1,7 @@
+{
+    "final_workflow_outputs_dir": "./<sample_name>/outputs",
+    "final_workflow_outputs_dir_metadata": true,
+    "use_relative_output_paths": false,
+    "final_workflow_log_dir": "./<sample_name>/wf_logs",
+    "final_call_logs_dir": "./<sample_name>/call_logs"
+}

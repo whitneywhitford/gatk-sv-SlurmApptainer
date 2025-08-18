@@ -1028,7 +1028,7 @@ plotHWSingle <- function(dat,svtypes,title=NULL,full.legend=T,lab.cex=1){
                          "BB"=HW.dat$hom_gts/nsamps)
     
     #Gather HW p-values & colors
-    HW.p <- HWChisqStats(X=HW.mat*nsamp,x.linked=F,pvalues=T)
+    HW.p <- HWChisqStats(X = as.matrix(HW.mat * nsamp), x.linked = F, pvalues = T)
     HW.cols <- rep("#4DAC26",times=length(HW.p))
     HW.cols[which(HW.p<0.05)] <- "#81F850"
     HW.cols[which(HW.p<0.05/length(HW.p))] <- "#AC26A1"

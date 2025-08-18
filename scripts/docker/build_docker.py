@@ -465,9 +465,11 @@ class ProjectBuilder:
             print("Building and pushing the following targets in order:" if self.remote_docker_repos else
                   "Building the following targets in order:")
             print(expanded_build_targets)
+            built_image_refs = []
             if self.project_arguments.dry_run:
                 for target_name in expanded_build_targets:
                     ImageBuilder(target_name, self).update_current_image()
+                    built_image_refs.extend(ImageBuilder(target_name, self).all_resulting_refs())
             else:
                 print_colored("#" * 50, Colors.MAGENTA)
                 for target_name in expanded_build_targets:
@@ -484,6 +486,7 @@ class ProjectBuilder:
                     image_builder = ImageBuilder(target_name, self)
                     image_builder.build(build_time_args)
                     image_builder.push()
+                    built_image_refs.extend(image_builder.all_resulting_refs())
                     if self.project_arguments.prune_after_each_image and not self.project_arguments.dry_run:
                         # clean dangling images (i.e. those "<none>" images), stopped containers, etc
                         os.system("docker system prune -f")
@@ -511,6 +514,20 @@ class ProjectBuilder:
 
             build_completed = True
         finally:
+            # If requested, write the list of built image refs
+            tags_out = getattr(self.project_arguments, "tags_out", None)
+            if tags_out:
+                try:
+                    os.makedirs(os.path.dirname(tags_out), exist_ok=True) if os.path.dirname(tags_out) else None
+                    with open(tags_out, "w") as f_out:
+                        seen = set()
+                        for ref in built_image_refs:
+                            if ref not in seen:
+                                f_out.write(ref + "\n")
+                                seen.add(ref)
+                except Exception as e:
+                    print_colored(f"Failed to write --tags-out file: {e}", Colors.RED)
+
             for registry in self.registries.values():
                 registry.update_dockers_json(self.dependencies, self.project_arguments.dry_run)
             if not self.project_arguments.skip_cleanup:
@@ -571,7 +588,19 @@ class ImageBuilder:  # class for building and pushing a single image
             for remote_tag in remote_tags
         )
 
+
+
+    def all_resulting_refs(self) -> Tuple[str, ...]:
+        """
+        Return the set of image refs (repo/name:tag) that represent this build result.
+        If pushing to remotes, include those; otherwise include the local image ref.
+        """
+        if self.remote_docker_repos:
+            return tuple(img for _, img in self.remote_images)
+        return (self.local_image,)
+
     @property
+
     def no_force_rebuild(self) -> bool:
         return self.project_builder.project_arguments.no_force_rebuild
 
@@ -826,6 +855,12 @@ def __parse_arguments(args_list: List[str]) -> argparse.Namespace:
     parser.add_argument(
         "--image-tag", type=str, default=short_git_hash_head,
         help="Tag to be applied to all images being built."
+    
+    )
+
+    parser.add_argument(
+        "--tags-out", type=str,
+        help="Write newline-separated list of built image references (repo/name:tag) to this file."
     )
 
     parser.add_argument(

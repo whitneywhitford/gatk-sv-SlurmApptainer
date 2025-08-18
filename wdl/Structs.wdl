@@ -7,4 +7,5 @@ struct RuntimeAttr {
     Int? boot_disk_gb
     Int? preemptible_tries
     Int? max_retries
+	Int? clocktime_min
 }

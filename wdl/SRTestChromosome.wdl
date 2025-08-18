@@ -203,7 +203,8 @@ task SRTest {
     disk_gb: 10,
     boot_disk_gb: 10,
     preemptible_tries: 3,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 60
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -244,6 +245,7 @@ task SRTest {
     docker: sv_pipeline_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 

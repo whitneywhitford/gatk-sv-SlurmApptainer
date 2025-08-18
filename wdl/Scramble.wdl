@@ -113,7 +113,8 @@ task ScramblePart1 {
                                disk_gb: disk_size_gb,
                                boot_disk_gb: 10,
                                preemptible_tries: 3,
-                               max_retries: 1
+                               max_retries: 1,
+							   clocktime_min: 60
                              }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -149,6 +150,7 @@ task ScramblePart1 {
     docker: scramble_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 
@@ -173,7 +175,8 @@ task ScramblePart2 {
     disk_gb: disk_size_gb,
     boot_disk_gb: 10,
     preemptible_tries: 3,
-    max_retries: 1
+    max_retries: 1,
+	clocktime_min: 60
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -211,6 +214,7 @@ task ScramblePart2 {
     docker: scramble_docker
     preemptible: select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
+	runtime_minutes: select_first([runtime_attr.clocktime_min, default_attr.clocktime_min])
   }
 }
 
@@ -238,7 +242,8 @@ task MakeScrambleVcf {
                                   cpu_cores: 1,
                                   preemptible_tries: 3,
                                   max_retries: 1,
-                                  boot_disk_gb: 10
+                                  boot_disk_gb: 10,
+								  clocktime_min: 10
                                 }
   RuntimeAttr runtime_override = select_first([runtime_attr_override, runtime_default])
   runtime {
@@ -249,6 +254,7 @@ task MakeScrambleVcf {
     maxRetries: select_first([runtime_override.max_retries, runtime_default.max_retries])
     docker: sv_pipeline_docker
     bootDiskSizeGb: select_first([runtime_override.boot_disk_gb, runtime_default.boot_disk_gb])
+	runtime_minutes: select_first([runtime_override.clocktime_min, runtime_default.clocktime_min])
   }
 
   command <<<
