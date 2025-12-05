@@ -16,6 +16,7 @@ git clone https://github.com/whitneywhitford/gatk-sv-SlurmApptainer && cd gatk-s
 
 2. Build the docker images according to instructions at https://broadinstitute.github.io/gatk-sv/docs/advanced/docker/manual. The version of build_docker.py included in this repo creates a list of the docker image tags.
 ```
+cd scripts/docker
 python3 scripts/docker/build_docker.py \
 	--image-tag <[Date]-[Release Tag]-[Head SHA 8]> \
 	--targets all

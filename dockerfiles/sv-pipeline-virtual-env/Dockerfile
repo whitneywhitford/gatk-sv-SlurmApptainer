@@ -87,7 +87,7 @@ ARG BUILD_DEPS="make cmake g++ gcc gfortran \
                 libbz2-dev libblas-dev libicu-dev liblapack-dev liblzma-dev libpcre2-dev zlib1g-dev \
                 pkg-config libcurl4-openssl-dev libssl-dev libatlas-base-dev libssh2-1-dev libssh2-1 \
                 libgit2-dev libfftw3-dev libjpeg8-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev \
-                libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev"
+                libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libwebp-dev"
 ARG RUN_DEPS="file bzip2 libssl3 libatlas3-base libssh2-1 libgit2-1.1 libfftw3-3 libjpeg8 libxml2"
 RUN export NEW_PACKAGES=$(diff_of_lists.sh "$RUN_DEPS" $APT_REQUIRED_PACKAGES) && \
     printf " $NEW_PACKAGES" | fix_spaces.sh >> $APT_REQUIRED_PACKAGES
@@ -99,12 +99,15 @@ ARG R_PACKAGES="assertthat beeswarm BH BSDA caret cli crayon DAAG data.table dev
                 rpart stringi stringr survival tibble tidyr tidyselect utf8 vioplot withr zoo"
 ARG BIOCONDUCTOR_PKGS="SNPRelate multtest"
 ARG DEBIAN_FRONTEND=noninteractive
-RUN export APT_TRANSIENT_PACKAGES=$(diff_of_lists.sh "$BUILD_DEPS" $APT_REQUIRED_PACKAGES) && \
-    apt-get -qqy update --fix-missing && \
-    apt-get -qqy install --no-install-recommends $BUILD_DEPS $(fix_spaces.sh $APT_REQUIRED_PACKAGES) && \
+RUN sed -i 's|http://security.ubuntu.com/ubuntu|http://mirror.archive.ubuntu.com/ubuntu|' /etc/apt/sources.list && \
+    sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirror.archive.ubuntu.com/ubuntu|' /etc/apt/sources.list && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get update --fix-missing && \
+    export APT_TRANSIENT_PACKAGES=$(diff_of_lists.sh "$BUILD_DEPS" $APT_REQUIRED_PACKAGES) && \
+    apt-get install -y --no-install-recommends $BUILD_DEPS $(fix_spaces.sh $APT_REQUIRED_PACKAGES) && \
     install_bioconductor_packages.R $BIOCONDUCTOR_PKGS && \
-    install_deprecated_R_package.sh "https://cran.r-project.org/src/contrib/Archive/MASS/MASS_7.3-58.tar.gz" && \
-    install_deprecated_R_package.sh "https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz" && \
+    install_deprecated_R_package.sh "https://cloud.r-project.org/src/contrib/Archive/MASS/MASS_7.3-58.tar.gz" && \
+    install_deprecated_R_package.sh "https://cloud.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz" && \
     install_R_packages.R $R_PACKAGES && \
     apt-get -qqy remove --purge $APT_TRANSIENT_PACKAGES && \
     apt-get -qqy autoremove --purge && \
