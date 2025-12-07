@@ -9,10 +9,10 @@
 # to that local .list.
 #
 # Defaults:
-#   --singlesample ../../inputs/build/NA12878/test/GATKSVPipelineSingleSample.json
-#   --dest        ../../REF
-#   --update-jsons ../../inputs/value/resources_hg38.json ../../inputs/values/ref_panel_1kg.json
-#   Flat layout is DEFAULT: files go to ../../REF/<basename>
+#   --singlesample inputs/build/NA12878/test/GATKSVPipelineSingleSample.json
+#   --dest        ./REF
+#   --update-jsons inputs/value/resources_hg38.json ../../inputs/values/ref_panel_1kg.json
+#   Flat layout is DEFAULT: files go to ./REF/<basename>
 #
 # Examples:
 #   python download_gs_and_update_json.py --dry-run --show-diff --verbose
@@ -50,6 +50,8 @@ def parse_args():
                    help="Mirror bucket structure under dest instead of flat (<dest>/<basename>). Default is flat.")
     p.add_argument("--skip-download", action="store_true",
                    help="Do NOT run gsutil; just compute mappings and update JSONs.")
+    p.add_argument("--download-cram", action="store_true",
+                   help="Download NA12878.final.cram and its index (default: skipped).")
     p.add_argument("--dry-run", action="store_true",
                    help="Preview actions without downloading or modifying JSONs.")
     p.add_argument("--backup", action="store_true",
@@ -214,6 +216,11 @@ def main():
             # Download items inside the list
             for src, dst in item_plans:
                 if isinstance(src, str) and src.startswith("gs://") and dst is not None:
+                    # Skip CRAM/CRAI unless explicitly requested
+                    if (not args.download_cram) and (src.endswith(".cram") or src.endswith(".crai")):
+                        if args.verbose:
+                            print(f"[SKIP-CRAM] {src} -> {dst}")
+                        continue
                     if not args.dry_run and not args.skip_download:
                         run_gsutil_cp(src, dst, verbose=args.verbose)
                     else:
@@ -234,13 +241,20 @@ def main():
         if args.verbose or args.dry_run:
             print("\nPlanned downloads (top-level URIs):")
             for uri, local in uri_to_local.items():
-                if is_list_uri(uri): 
+                if is_list_uri(uri):
                     continue
-                print(f"  {uri} -> {local}")
+                if (not args.download_cram) and (uri.endswith(".cram") or uri.endswith(".crai")):
+                    print(f"  [SKIP-CRAM] {uri} -> {local}")
+                else:
+                    print(f"  {uri} -> {local}")
     else:
         for uri, local in uri_to_local.items():
             if is_list_uri(uri):
                 # The list content was handled separately; skip cp for the list itself
+                continue
+            if (not args.download_cram) and (uri.endswith(".cram") or uri.endswith(".crai")):
+                if args.verbose:
+                    print(f"[SKIP-CRAM] {uri} -> {local}")
                 continue
             run_gsutil_cp(uri, Path(local), verbose=args.verbose)
 

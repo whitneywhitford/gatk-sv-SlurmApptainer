@@ -17,7 +17,7 @@ git clone https://github.com/whitneywhitford/gatk-sv-SlurmApptainer && cd gatk-s
 2. Build the docker images according to instructions at https://broadinstitute.github.io/gatk-sv/docs/advanced/docker/manual. The version of build_docker.py included in this repo creates a list of the docker image tags.
 ```
 cd scripts/docker
-python3 scripts/docker/build_docker.py \
+python3 build_docker.py \
 	--image-tag <[Date]-[Release Tag]-[Head SHA 8]> \
 	--targets all
 	--tags-out built_image_refs.txt
@@ -29,11 +29,11 @@ bash ./export_docker_images.sh built_image_refs.txt
 ```
 
 4. Clone the repository on HPC
-
-5. Transfer docker_images directory and ./inputs/values/dockers.json from docker computer to HPC
 ```
 git clone https://github.com/whitneywhitford/gatk-sv-SlurmApptainer && cd gatk-sv-SlurmApptainer
 ```
+
+5. Transfer docker_images directory and ./inputs/values/dockers.json from docker computer to HPC
 
 6. Build GATK-SV docker images and update dockers.json
 ```

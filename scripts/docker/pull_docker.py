@@ -180,7 +180,7 @@ def main():
     )
     ap.add_argument(
         "--build-docker",
-        default="scripts/docker/build_docker.py",
+        default="build_docker.py",
         help="Path to build_docker.py (default: scripts/docker/build_docker.py)",
     )
     ap.add_argument(
