@@ -2,8 +2,9 @@
 
 This is a modification of the Broad Institute's GATK-SV pipeline so that it can run on a slurm-based HPC running apptainer. No root access is necessary, but access to a computer running docker (such as via WSL) is required.
 
-__As of 19/18/2025, the Single Sample workflow in current commit for this repo does not work. However, the instructions for building the docker images and imputs, and running the workflow will all work if you use the WDL files from the latest release of GATK-SV [v1.0.5](https://github.com/broadinstitute/gatk-sv/releases/tag/v1.0.5). Users will have to alter the files in wdl/filestoalter.txt to update issues and add clocktime runtime attributes.__
+__The Single Sample workflow in current commit for this repo works for the latest release of GATK-SV [v1.1](https://github.com/broadinstitute/gatk-sv/releases/tag/v1.1).
 
+Contributions to make the Joint Calling workflow or other parts of the repo are welcomed.
 
 For technical documentation on GATK-SV, including how to run the pipeline, please refer to the original website [website](https://broadinstitute.github.io/gatk-sv/).
 

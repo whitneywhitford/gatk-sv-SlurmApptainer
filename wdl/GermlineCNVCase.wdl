@@ -338,7 +338,7 @@ task GermlineCNVCallerCaseMode {
       boot_disk_gb: 10,
       preemptible_tries: 3,
       max_retries: 1,
-      clocktime_min: 30
+      clocktime_min: 60
     }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 

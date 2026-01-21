@@ -1400,7 +1400,9 @@ workflow GATKSVPipelineSingleSample {
   call svc.SVConcordance {
     input:
       eval_vcf=RefineComplexVariants.cpx_refined_vcf,
+	  eval_vcf_index=RefineComplexVariants.cpx_refined_vcf_index,
       truth_vcf=JoinRawCalls.joined_raw_calls_vcf,
+	  truth_vcf_index=JoinRawCalls.joined_raw_calls_vcf_index,
       output_prefix=sample_id,
       contig_list=primary_contigs_list,
       reference_dict=reference_dict,

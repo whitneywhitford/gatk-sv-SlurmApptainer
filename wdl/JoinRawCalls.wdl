@@ -112,6 +112,7 @@ workflow JoinRawCalls {
     call tasks_cluster.SVCluster {
       input:
         vcfs=FormatVcfForGatk.gatk_formatted_vcf,
+		vcf_indexes=FormatVcfForGatk.gatk_formatted_vcf_index,
         ploidy_table=CreatePloidyTableFromPed.out,
         output_prefix="~{prefix}.join_raw_calls.~{contig}",
         contig=contig,

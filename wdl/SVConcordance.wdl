@@ -7,7 +7,9 @@ workflow SVConcordance {
   input {
     # Vcfs must be formatted using FormatVcfForGatk (if unsure, check for ECN FORMAT field)
     File eval_vcf
+	File eval_vcf_index
     File truth_vcf
+	File truth_vcf_index
     String output_prefix
 
     File contig_list
@@ -32,7 +34,9 @@ workflow SVConcordance {
     call SVConcordanceTask {
       input:
         eval_vcf=eval_vcf,
+		eval_vcf_index=eval_vcf_index,
         truth_vcf=truth_vcf,
+		truth_vcf_index=truth_vcf_index,
         output_prefix="~{output_prefix}.concordance.~{contig}",
         contig=contig,
         clustering_config=clustering_config,
@@ -64,8 +68,10 @@ workflow SVConcordance {
 
 task SVConcordanceTask {
   input {
-    File truth_vcf
     File eval_vcf
+	File eval_vcf_index
+    File truth_vcf
+	File truth_vcf_index
     String output_prefix
     File reference_dict
     String? contig

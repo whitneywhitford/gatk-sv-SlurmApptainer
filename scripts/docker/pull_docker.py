@@ -137,21 +137,27 @@ def pull_sifs_for_keys(unbuilt_keys: list[str], dockers_json: dict, out_dir: Pat
         url = dockers_json[key]
         if not isinstance(url, str):
             continue
-        pull_url = url if url.startswith("docker://") else "docker://" + url
-        base = docker_url_to_basename(url)
+        # Apptainer requires lowercase image references (Docker allows uppercase in tags)
+        url_no_scheme = url[len("docker://"):] if url.startswith("docker://") else url
+        pull_url = "docker://" + url_no_scheme.lower()
+
+        base = docker_url_to_basename(url)  # keep original for stable filenames/updates
         sif_path = out_dir / f"{base}.sif"
 
         if dry_run:
             print(f"[DRY-RUN] Would pull {pull_url} -> {sif_path}")
         else:
-            if url not in url_to_basename:
+            # Deduplicate pulls case-insensitively (Apptainer lowercases refs anyway)
+            dedupe_key = url_no_scheme.lower()
+
+            if dedupe_key not in url_to_basename:
                 if sif_path.exists():
                     print(f"Skipping pull for {sif_path} (already exists)")
                 else:
                     print(f"Pulling {pull_url} -> {sif_path}")
                     subprocess.run(["apptainer", "pull", str(sif_path), pull_url], check=True)
-                url_to_basename[url] = base
-            base = url_to_basename[url]
+                url_to_basename[dedupe_key] = base
+            base = url_to_basename[dedupe_key]
 
         updates[key] = base  # update dockers.json to basename (no .sif)
     return updates

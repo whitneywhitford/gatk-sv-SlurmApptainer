@@ -167,6 +167,27 @@ def unified_diff_preview(original_text: str, updated_text: str, path: Path) -> s
     )
     return "".join(diff_lines)
 
+def gsutil_exists(gs_uri: str, verbose: bool=False) -> bool:
+    """
+    Return True if a gs:// object exists, else False.
+    Uses `gsutil stat` which is cheap and reliable for single-object existence checks.
+    """
+    cmd = ["gsutil"]
+    if not verbose:
+        cmd.append("-q")
+    cmd += ["stat", gs_uri]
+    try:
+        subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+def maybe_tbi_for_gz(gs_uri: str) -> str:
+    """
+    Given gs://...*.gz (but not .gz.tbi), return the corresponding .tbi URI.
+    """
+    return gs_uri + ".tbi"
+
 def main():
     args = parse_args()
 
@@ -223,9 +244,22 @@ def main():
                         continue
                     if not args.dry_run and not args.skip_download:
                         run_gsutil_cp(src, dst, verbose=args.verbose)
+
+                        # If this is a bgzipped/tabix-able file and the .tbi exists in GCS, download it too
+                        if src.endswith(".gz") and not src.endswith(".gz.tbi"):
+                            tbi_uri = maybe_tbi_for_gz(src)
+                            if gsutil_exists(tbi_uri, verbose=args.verbose):
+                                tbi_dst = Path(str(dst) + ".tbi")
+                                run_gsutil_cp(tbi_uri, tbi_dst, verbose=args.verbose)
+                            elif args.verbose:
+                                print(f"[INFO] No .tbi found for {src}")
                     else:
                         if args.verbose or args.dry_run:
                             print(f"{'[DRY-RUN]' if args.dry_run else '[SKIP-DL]'} {src} -> {dst}")
+
+                            if src.endswith(".gz") and not src.endswith(".gz.tbi"):
+                                tbi_uri = maybe_tbi_for_gz(src)
+                                print(f"{'[DRY-RUN]' if args.dry_run else '[SKIP-DL]'} (if exists) {tbi_uri} -> {dst}.tbi")
 
             # Write local .list with replaced paths
             write_local_list(target_list_path, item_plans, dry_run=args.dry_run, verbose=args.verbose)
@@ -247,6 +281,9 @@ def main():
                     print(f"  [SKIP-CRAM] {uri} -> {local}")
                 else:
                     print(f"  {uri} -> {local}")
+                    # If this is a .gz file, also show planned .tbi download
+                    if uri.endswith(".gz") and not uri.endswith(".gz.tbi"):
+                        print(f"    (if exists) {uri}.tbi -> {local}.tbi")
     else:
         for uri, local in uri_to_local.items():
             if is_list_uri(uri):
@@ -257,6 +294,15 @@ def main():
                     print(f"[SKIP-CRAM] {uri} -> {local}")
                 continue
             run_gsutil_cp(uri, Path(local), verbose=args.verbose)
+
+            # If this is a bgzipped/tabix-able file and the .tbi exists in GCS, download it too
+            if uri.endswith(".gz") and not uri.endswith(".gz.tbi"):
+                tbi_uri = maybe_tbi_for_gz(uri)
+                if gsutil_exists(tbi_uri, verbose=args.verbose):
+                    tbi_local = Path(local + ".tbi")
+                    run_gsutil_cp(tbi_uri, tbi_local, verbose=args.verbose)
+                elif args.verbose:
+                    print(f"[INFO] No .tbi found for {uri}")
 
     # Update target JSONs
     for uj in update_json_paths:
@@ -279,6 +325,24 @@ def main():
             with uj.open("w") as f:
                 json.dump(updated_obj, f, indent=2)
             if args.verbose: print(f"Updated: {uj}")
+    
+    try:
+        for json_path in args.update_jsons:
+            if json_path.endswith("ref_panel_1kg.json"):
+                with open(json_path) as f:
+                    rp = json.load(f)
+
+                # The key may be called "sample_ids" or similar
+                samples = rp.get("sample_ids") or rp.get("samples") or []
+
+                out_list = Path(args.dest) / "ref_panel_1kg.samples.list"
+                with open(out_list, "w") as outf:
+                    for s in samples:
+                        outf.write(f"{s}\n")
+
+                print(f"[INFO] Wrote sample list: {out_list}")
+    except Exception as e:
+        print(f"[WARN] Could not write ref_panel_1kg sample list: {e}")
 
     # Final summary
     print("\nSummary")

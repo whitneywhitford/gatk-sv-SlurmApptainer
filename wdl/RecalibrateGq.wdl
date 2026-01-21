@@ -62,7 +62,7 @@ task RecalibrateGqTask {
         File gq_recalibrator_model_file
         Array[String] recalibrate_gq_args = []
         String gatk_docker
-        Float mem_gb_java = 9.0
+        Float mem_gb_java = 20.0
         Float mem_gb_overhead = 1.5
     }
 
@@ -76,8 +76,10 @@ task RecalibrateGqTask {
         cpu: 1
         preemptible: 3
         max_retries: 1
-        memory: mem_gb + " GiB"
+        #memory: mem_gb + " GiB"
+		memory: "32GB"
         disks: "local-disk " + disk_gb + " HDD"
+		runtime_minutes: 30
     }
 
     command <<<
