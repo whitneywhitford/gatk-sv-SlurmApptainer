@@ -186,17 +186,17 @@ def main():
     )
     ap.add_argument(
         "--build-docker",
-        default="build_docker.py",
+        default="scripts/docker/build_docker.py",
         help="Path to build_docker.py (default: scripts/docker/build_docker.py)",
     )
     ap.add_argument(
         "--dockers-json",
-        default="../../inputs/values/dockers.json",
+        default="inputs/values/dockers.json",
         help="Path to dockers.json (default: inputs/values/dockers.json)",
     )
     ap.add_argument(
         "--out-dir",
-        default="../../docker_images/",
+        default="docker_images/",
         help="Directory to store .sif files (default: docker_images/)",
     )
     ap.add_argument(
