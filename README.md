@@ -57,7 +57,20 @@ bash scripts/inputs/build_default_inputs.sh -d .
 python3 scripts/inputs/download_singlesamplerefs.py
 ```
 
-3. Build json for your sample of choice
+3. Create json template for sample
+```
+cat <<EOF > inputs/values/<sample_name>.json
+{
+  "name" : "<sample_name>",
+
+  "bam_or_cram_file" : "<filepath>/<sample_name>.cram",
+  "bam_or_cram_index" : "<filepath>/<sample_name>.cram.crai",
+  "sample_id" : "<sample_name>"
+}
+EOF
+```
+
+4. Build json for your sample
 ```
 python3 scripts/inputs/build_inputs.py \
   inputs/values \
@@ -66,7 +79,7 @@ python3 scripts/inputs/build_inputs.py \
   -a '{ "single_sample" : "<sample_name>", "ref_panel" : "ref_panel_1kg" }'
 ```
 
-4. Compress dependencies
+5. Compress dependencies
 ```
 zip wdl/dep.zip wdl/*.wdl
 ```
