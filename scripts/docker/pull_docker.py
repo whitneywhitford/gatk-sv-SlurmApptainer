@@ -8,7 +8,7 @@ from pathlib import Path
 
 # ---------- robust brace-matching helpers ----------
 
-def _find_brace_block(text, start_idx):
+def _find_brace_block(text: str, start_idx: int) -> tuple[str, int]:
     """Return (block_string, end_idx) for the balanced {...} starting at start_idx."""
     if text[start_idx] != "{":
         raise ValueError("Expected '{' at start_idx")
@@ -41,7 +41,7 @@ def _find_brace_block(text, start_idx):
                 return text[start_idx + 1:i], i
     raise ValueError("Unbalanced braces while parsing")
 
-def _extract_dependencies_block(text):
+def _extract_dependencies_block(text: str) -> str:
     m = re.search(r"\bdependencies\s*=\s*{", text)
     if not m:
         raise ValueError("Could not find 'dependencies = {' in build_docker.py")
@@ -51,7 +51,7 @@ def _extract_dependencies_block(text):
 
 # ---------- parse buildable image names from build_docker.py ----------
 
-def extract_all_buildable_images(build_docker_path: Path):
+def extract_all_buildable_images(build_docker_path: Path) -> set[str]:
     """
     Return set of ALL image names the script can build:
     - keys in ProjectBuilder.dependencies
@@ -90,11 +90,27 @@ def normalize_key(json_key: str) -> str:
     return key.replace("_", "-")
 
 def docker_url_to_basename(url: str) -> str:
-    """repo/name:tag -> name_tag"""
+    """
+    repo/name:tag -> name_tag
+
+    Special-case numeric tags like 18.04 -> 1804 so that:
+      docker://ubuntu:18.04 -> ubuntu_1804
+    """
     if url.startswith("docker://"):
         url = url[len("docker://"):]
-    last = url.split("/")[-1]
-    return last.replace(":", "_")
+
+    last = url.split("/")[-1]  # e.g. ubuntu:18.04 or gatk:4.6.1.0
+
+    if ":" not in last:
+        return last
+
+    name, tag = last.split(":", 1)
+
+    # Only collapse dots for purely numeric tags (common for Ubuntu versions, etc.)
+    if re.fullmatch(r"[0-9.]+", tag):
+        tag = tag.replace(".", "")
+
+    return f"{name}_{tag}"
 
 def load_json(p: Path):
     with p.open("r") as f:
@@ -112,6 +128,7 @@ def compute_unbuilt_keys(build_docker_path: Path, dockers_json: dict) -> list[st
     buildable_names = extract_all_buildable_images(build_docker_path)
 
     json_keys = set(dockers_json.keys()) - {"name"}
+
     # A) buildable by normalized name
     buildable_keys = {k for k in json_keys if normalize_key(k) in buildable_names}
 
@@ -121,62 +138,74 @@ def compute_unbuilt_keys(build_docker_path: Path, dockers_json: dict) -> list[st
         if isinstance(dockers_json[k], str) and dockers_json[k] in buildable_urls:
             buildable_keys.add(k)
 
-    # Final unbuilt
     return sorted(json_keys - buildable_keys)
 
-def pull_sifs_for_keys(unbuilt_keys: list[str], dockers_json: dict, out_dir: Path, dry_run: bool) -> dict[str, str]:
+def pull_sifs_for_keys(
+    unbuilt_keys: list[str],
+    dockers_json: dict,
+    out_dir: Path,
+    dry_run: bool
+) -> dict[str, str]:
     """
     Pull each unbuilt URL with apptainer into out_dir, return mapping key->basename (no .sif).
-    Deduplicate by URL.
+    Deduplicate by URL (case-insensitive).
     """
-    out_dir.mkdir(parents=True, exist_ok=True) if not dry_run else None
-    url_to_basename: dict[str, str] = {}
+    if not dry_run:
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Map dedupe_key (lowercased URL without scheme) -> sif stem actually used (lowercase)
+    url_to_stem: dict[str, str] = {}
     updates: dict[str, str] = {}
 
     for key in unbuilt_keys:
-        url = dockers_json[key]
+        url = dockers_json.get(key)
         if not isinstance(url, str):
             continue
-        # Apptainer requires lowercase image references (Docker allows uppercase in tags)
-        url_no_scheme = url[len("docker://"):] if url.startswith("docker://") else url
-        pull_url = "docker://" + url_no_scheme.lower()
 
-        base = docker_url_to_basename(url)  # keep original for stable filenames/updates
-        sif_path = out_dir / f"{base}.sif"
+        # Preserve original case for pulling
+        url_no_scheme = url[len("docker://"):] if url.startswith("docker://") else url
+        pull_url = "docker://" + url_no_scheme
+
+        # Lowercase only for the on-disk stem
+        stem = docker_url_to_basename(url).lower()
+        sif_path = out_dir / f"{stem}.sif"
 
         if dry_run:
             print(f"[DRY-RUN] Would pull {pull_url} -> {sif_path}")
-        else:
-            # Deduplicate pulls case-insensitively (Apptainer lowercases refs anyway)
-            dedupe_key = url_no_scheme.lower()
+            updates[key] = stem
+            continue
 
-            if dedupe_key not in url_to_basename:
-                if sif_path.exists():
-                    print(f"Skipping pull for {sif_path} (already exists)")
-                else:
-                    print(f"Pulling {pull_url} -> {sif_path}")
-                    subprocess.run(["apptainer", "pull", str(sif_path), pull_url], check=True)
-                url_to_basename[dedupe_key] = base
-            base = url_to_basename[dedupe_key]
+        dedupe_key = url_no_scheme.lower()
+        if dedupe_key not in url_to_stem:
+            if sif_path.exists():
+                print(f"Skipping pull for {sif_path} (already exists)")
+            else:
+                print(f"Pulling {pull_url} -> {sif_path}")
+                subprocess.run(["apptainer", "pull", str(sif_path), pull_url], check=True)
+            url_to_stem[dedupe_key] = stem
 
-        updates[key] = base  # update dockers.json to basename (no .sif)
+        updates[key] = url_to_stem[dedupe_key]
+
     return updates
 
 def apply_updates(dockers_json_path: Path, dockers_json: dict, updates: dict[str, str], dry_run: bool):
     if not updates:
         print("No updates to dockers.json needed.")
         return
+
     print("\nPlanned updates to dockers.json:")
     for k, new in updates.items():
         old = dockers_json.get(k)
         print(f"  {k}: {old}  ->  {new}")
         if not dry_run:
             dockers_json[k] = new
-    if not dry_run:
-        save_json(dockers_json_path, dockers_json)
-        print(f"Saved {dockers_json_path}")
-    else:
+
+    if dry_run:
         print("[DRY-RUN] Not writing changes.")
+        return
+
+    save_json(dockers_json_path, dockers_json)
+    print(f"Saved {dockers_json_path}")
 
 # ---------- CLI ----------
 
@@ -224,12 +253,12 @@ def main():
         print("  (none)")
     else:
         for k in unbuilt_keys:
-            print(f"  {k} -> {dockers[k]}")
+            print(f"  {k} -> {dockers.get(k)}")
 
-    # 2) pull and compute updates (key -> basename)
+    # 2) pull and compute updates (key -> sif stem)
     updates = pull_sifs_for_keys(unbuilt_keys, dockers, out_dir, dry_run=args.dry_run)
 
-    # 3) write updates back to dockers.json (values set to basename without .sif)
+    # 3) write updates back to dockers.json (values set to sif stem)
     apply_updates(dockers_json_path, dockers, updates, dry_run=args.dry_run)
 
 if __name__ == "__main__":
